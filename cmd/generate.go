@@ -50,15 +50,15 @@ var generateCmd = &cobra.Command{
 
 		switch tokenType {
 		case "env":
-			green.Printf("✓ Token %s created (env)\n", t.ID)
+			green.Printf("Token %s created (env)\n", t.ID)
 			fmt.Printf("  Add this to your shell or .env file:\n")
 			fmt.Printf("  export API_KEY=\"%s\"\n", t.CallbackURL)
 		case "file":
-			green.Printf("✓ Token %s created (file)\n", t.ID)
+			green.Printf("Token %s created (file)\n", t.ID)
 			fmt.Printf("  Callback: %s\n", t.CallbackURL)
 			fmt.Printf("  Use 'gobaitr embed --token %s --target <file>' to inject it.\n", t.ID)
 		default:
-			green.Printf("✓ Token %s created (url)\n", t.ID)
+			green.Printf("Token %s created (url)\n", t.ID)
 			fmt.Printf("  Callback: %s\n", t.CallbackURL)
 		}
 		if t.Note != "" {
