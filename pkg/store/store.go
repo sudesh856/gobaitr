@@ -48,6 +48,7 @@ func migrate(db *sql.DB) error {
 	callback_url TEXT NOT NULL,
 	note TEXT,
 	created_at DATETIME NOT NULL,
+	expires_at DATETIME,
 	triggered INTEGER DEFAULT 0,
 	triggered_at DATETIME,
 	triggered_by TEXT
@@ -75,10 +76,14 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) Insert(id, typ, secret, callbackURL, note string, createdAt time.Time) error {
+func (s *Store) Insert(id, typ, secret, callbackURL, note string, createdAt time.Time, expiresAt *time.Time) error {
+	var exp interface{}
+	if expiresAt != nil {
+		exp = expiresAt.Format(time.RFC3339)
+	}
 	_, err := s.db.Exec(
-		`INSERT INTO tokens (id, type, secret, callback_url, note, created_at, triggered) VALUES (?, ?, ?, ?, ?, ?, 0)`,
-		id, typ, secret, callbackURL, note, createdAt.Format(time.RFC3339),
+		`INSERT INTO tokens (id, type, secret, callback_url, note, created_at, triggered, expires_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)`,
+		id, typ, secret, callbackURL, note, createdAt.Format(time.RFC3339), exp,
 	)
 	return err
 }

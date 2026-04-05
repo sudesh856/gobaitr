@@ -9,6 +9,7 @@ type Token struct {
 	Secret string
 	CallbackURL string
 	CreatedAt time.Time
+	ExpiresAt   *time.Time
 	Note string
 	Triggered bool
 	TriggeredAt *time.Time

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -12,8 +13,9 @@ import (
 )
 
 var (
-	generatePort int
-	generateNote string
+	generatePort    int
+	generateNote    string
+	generateExpires string
 )
 
 var generateCmd = &cobra.Command{
@@ -27,7 +29,17 @@ var generateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		t, err := token.Generate(tokenType, generatePort, generateNote)
+		var expiresIn time.Duration
+		if generateExpires != "" {
+			var err error
+			expiresIn, err = time.ParseDuration(generateExpires)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: invalid --expires-in value. Use formats like 24h, 168h (7 days)\n")
+				os.Exit(1)
+			}
+		}
+
+		t, err := token.Generate(tokenType, generatePort, generateNote, expiresIn)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
@@ -41,7 +53,7 @@ var generateCmd = &cobra.Command{
 
 		defer st.Close()
 
-		if err := st.Insert(t.ID, t.Type, t.Secret, t.CallbackURL, t.Note, t.CreatedAt); err != nil {
+		if err := st.Insert(t.ID, t.Type, t.Secret, t.CallbackURL, t.Note, t.CreatedAt, t.ExpiresAt); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -64,11 +76,17 @@ var generateCmd = &cobra.Command{
 		if t.Note != "" {
 			fmt.Printf("  Note:     %s\n", t.Note)
 		}
+
+		if t.ExpiresAt != nil {
+			fmt.Printf("  Expires:  %s\n", t.ExpiresAt.Format(time.RFC3339))
+		}
 	},
 }
 
 func init() {
 	generateCmd.Flags().IntVar(&generatePort, "port", 8080, "Listener port for callback URL")
 	generateCmd.Flags().StringVar(&generateNote, "note", "", "Optional label for this token")
+	generateCmd.Flags().StringVar(&generateExpires, "expires-in", "", "Token TTL e.g. 24h, 7d, 30d")
+
 	rootCmd.AddCommand(generateCmd)
 }
