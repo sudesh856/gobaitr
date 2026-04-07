@@ -14,6 +14,11 @@ type Store struct {
 	db *sql.DB
 }
 
+
+func (s *Store) GetDB() *sql.DB {
+    return s.db
+}
+
 func New() (*Store, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
