@@ -7,18 +7,19 @@ import (
 	"net/http"
 	"os"
 	"time"
-)
 
+	"github.com/fatih/color"
+)
 
 type WebhookEvent struct {
 	Event          string            `json:"event"`
 	TokenID        string            `json:"token_id"`
-	TokenType      string            `json:"token_type"`     
-	TokenNote      string            `json:"token_note"`      
+	TokenType      string            `json:"token_type"`
+	TokenNote      string            `json:"token_note"`
 	TriggeredAt    string            `json:"triggered_at"`
 	RemoteIP       string            `json:"remote_ip"`
 	UserAgent      string            `json:"user_agent"`
-	Headers        map[string]string `json:"headers"`        
+	Headers        map[string]string `json:"headers"`
 	GobaitrVersion string            `json:"gobaitr_version"`
 }
 
@@ -69,7 +70,7 @@ func DispatchWebhook(url, tokenID, tokenType, tokenNote, remoteIP, userAgent str
 	if err := attempt(); err != nil {
 		time.Sleep(2 * time.Second)
 		if err := attempt(); err != nil {
-			fmt.Fprintf(os.Stderr, "[webhook] delivery failed for %s: %v\n", tokenID, err)
+			color.New(color.FgYellow).Fprintf(os.Stderr, "Warning: webhook delivery failed (attempt 2/2): %s\n", url)
 			return
 		}
 	}

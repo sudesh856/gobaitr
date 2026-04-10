@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/sudesh856/gobaitr/pkg/store"
@@ -35,7 +36,10 @@ func runDelete(cmd *cobra.Command, args []string) error {
 
 	_, err = s.GetByID(tokenID)
 	if err != nil {
-		return fmt.Errorf("token %q not found", tokenID)
+		red := color.New(color.FgRed)
+		red.Fprintf(os.Stderr, "Error: token %s not found.\n", tokenID)
+		os.Exit(1)
+return nil
 	}
 
 	eventCount := s.EventCount(tokenID)

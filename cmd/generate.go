@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/sudesh856/gobaitr/pkg/store"
@@ -25,7 +24,7 @@ var generateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tokenType := args[0]
 		if tokenType != "url" && tokenType != "file" && tokenType != "env" {
-			fmt.Fprint(os.Stderr, "Error: type must be url, file, or env")
+			colorError.Fprintf(os.Stderr, "Error: type must be url, file, or env\n")
 			os.Exit(1)
 		}
 
@@ -34,44 +33,42 @@ var generateCmd = &cobra.Command{
 			var err error
 			expiresIn, err = time.ParseDuration(generateExpires)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: invalid --expires-in value. Use formats like 24h, 168h (7 days)\n")
+				colorError.Fprintf(os.Stderr, "Error: invalid --expires-in value. Use formats like 24h, 168h (7 days)\n")
 				os.Exit(1)
 			}
 		}
 
 		t, err := token.Generate(tokenType, generatePort, generateNote, expiresIn)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			colorError.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
 		st, err := store.New()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			colorError.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
 		defer st.Close()
 
 		if err := st.Insert(t.ID, t.Type, t.Secret, t.CallbackURL, t.Note, t.CreatedAt, t.ExpiresAt); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			colorError.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		green := color.New(color.FgGreen, color.Bold)
-
 		switch tokenType {
 		case "env":
-			green.Printf("Token %s created (env)\n", t.ID)
+			colorSuccess.Printf("✓ Token %s created (env)\n", t.ID)
 			fmt.Printf("  Add this to your shell or .env file:\n")
 			fmt.Printf("  export API_KEY=\"%s\"\n", t.CallbackURL)
 		case "file":
-			green.Printf("Token %s created (file)\n", t.ID)
-			fmt.Printf("  Callback: %s\n", t.CallbackURL)
+			colorSuccess.Printf("✓ Token %s created (file)\n", t.ID)
+			colorInfo.Printf("  Callback: %s\n", t.CallbackURL)
 			fmt.Printf("  Use 'gobaitr embed --token %s --target <file>' to inject it.\n", t.ID)
 		default:
-			green.Printf("Token %s created (url)\n", t.ID)
-			fmt.Printf("  Callback: %s\n", t.CallbackURL)
+			colorSuccess.Printf("✓ Token %s created (url)\n", t.ID)
+			colorInfo.Printf("  Callback: %s\n", t.CallbackURL)
 		}
 		if t.Note != "" {
 			fmt.Printf("  Note:     %s\n", t.Note)

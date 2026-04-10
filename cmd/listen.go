@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -24,7 +23,8 @@ var listenCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		st, err := store.New()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			colorError.Fprintf(os.Stderr, "Error: %v\n", err)
+
 			os.Exit(1)
 		}
 		defer st.Close()
@@ -39,7 +39,8 @@ var listenCmd = &cobra.Command{
 		}
 
 		if err := listener.Start(cfg, st.GetDB()); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			colorError.Fprintf(os.Stderr, "Error: %v\n", err)
+
 			os.Exit(1)
 		}
 	},

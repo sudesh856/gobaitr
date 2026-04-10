@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -18,9 +19,8 @@ type DB struct {
 	*sql.DB
 }
 
-
 func (s *Store) GetDB() *sql.DB {
-    return s.db
+	return s.db
 }
 
 func New() (*Store, error) {
@@ -38,13 +38,19 @@ func New() (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := db.Ping(); err != nil {
+		if strings.Contains(err.Error(), "database is locked") {
+			return nil, fmt.Errorf("database locked. Wait a moment and retry")
+		}
+		return nil, err
+	}
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		return nil, err
 	}
 
 	if _, err := db.Exec("PRAGMA busy_timeout=5000;"); err != nil {
-    return nil, err
-}
+		return nil, err
+	}
 	if err := migrate(db); err != nil {
 		return nil, err
 	}
@@ -147,7 +153,7 @@ func (s *Store) GetByID(id string) (map[string]interface{}, error) {
 	}, nil
 }
 
-func (s *Store) GetEvents(tokenID string)  ([]map[string]interface{}, error) {
+func (s *Store) GetEvents(tokenID string) ([]map[string]interface{}, error) {
 	rows, err := s.db.Query(
 
 		`SELECT id, token_id, fired_at, remote_ip, user_agent, headers
@@ -170,13 +176,12 @@ func (s *Store) GetEvents(tokenID string)  ([]map[string]interface{}, error) {
 		}
 
 		events = append(events, map[string]interface{}{
-			"id": id,
-			"tokenID": tokenID,
-			"firedAt": firedAt,
-			"remoteIP": remoteIP.String,
+			"id":        id,
+			"tokenID":   tokenID,
+			"firedAt":   firedAt,
+			"remoteIP":  remoteIP.String,
 			"userAgent": userAgent.String,
-			"headers": headers.String,
-
+			"headers":   headers.String,
 		})
 	}
 	return events, rows.Err()
@@ -265,4 +270,24 @@ func (s *Store) MarkTriggered(tokenID, remoteIP, userAgent, headersJSON string) 
 	}
 
 	return tx.Commit()
+}
+
+func newWithPath(dbPath string) (*Store, error) {
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec("PRAGMA busy_timeout=5000;"); err != nil {
+		return nil, err
+	}
+	if err := migrate(db); err != nil {
+		return nil, err
+	}
+	return &Store{db: db}, nil
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,17 +14,15 @@ import (
 )
 
 var (
-
-	embedToken string
+	embedToken  string
 	embedTarget string
 	embedDryRun bool
-
 )
 
 var embedCmd = &cobra.Command{
-	Use: "embed",
+	Use:   "embed",
 	Short: "Embed a canary token into a file",
-	Run: func(cmd *cobra.Command , args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		if embedToken == "" || embedTarget == "" {
 			fmt.Fprintln(os.Stderr, "Error: --token and --target are required!")
 			os.Exit(1)
@@ -46,9 +45,32 @@ var embedCmd = &cobra.Command{
 		callbackURL := token["callbackURL"].(string)
 		ext := strings.ToLower(filepath.Ext(embedTarget))
 
+		if _, err := os.Stat(embedTarget); os.IsNotExist(err) {
+			color.New(color.FgRed).Fprintf(os.Stderr, "Error: target file not found: %s\n", embedTarget)
+			os.Exit(1)
+		}
+
+		if ext != ".env" && ext != ".json" && ext != ".txt" {
+			color.New(color.FgRed).Fprintf(os.Stderr, "Error: unsupported file type %s -- supported: .env, .json, .txt\n", ext)
+			os.Exit(1)
+		}
+
+		if ext == ".json" {
+			data, err := os.ReadFile(embedTarget)
+			if err != nil {
+				color.New(color.FgRed).Fprintf(os.Stderr, "Error: could not read %s\n", embedTarget)
+				os.Exit(1)
+			}
+
+			if !json.Valid(data) {
+				color.New(color.FgRed).Fprintf(os.Stderr, "Error: %s is not valid JSON. Cannot embed safely.\n", embedTarget)
+				os.Exit(1)
+			}
+		}
+
 		if embedDryRun {
 			fmt.Printf("Dry run -- would embed into %s (token: %s)\n", embedTarget, embedToken)
-			fmt.Printf("callback URL: %s\n",callbackURL)
+			fmt.Printf("callback URL: %s\n", callbackURL)
 			return
 		}
 

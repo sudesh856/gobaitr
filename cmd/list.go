@@ -97,9 +97,9 @@ func runList(cmd *cobra.Command, args []string) error {
 		case isExpired:
 			status = "⚪ expired"
 		case triggered:
-			status = fmt.Sprintf("\033[31m🔴 TRIGGERED (%d events)\033[0m", eventCount)
+			status = colorAlert.Sprintf("🔴 TRIGGERED (%d events)", eventCount)
 		default:
-			status = "\033[32m🟢 clean\033[0m"
+			status = colorSuccess.Sprintf("🟢 clean")
 		}
 
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",

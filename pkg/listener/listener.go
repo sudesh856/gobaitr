@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -41,11 +42,41 @@ func getIPLimiter(ip string) *rate.Limiter {
 }
 
 func Start(cfg Config, db *sql.DB) error {
+	mux := buildMux(cfg, db)
 
+	if !cfg.TLS {
+		color.New(color.FgYellow, color.Bold).Fprintf(os.Stderr, "WARNING: listener bound to :%d without TLS — secrets visible on wire\n", cfg.Port)
+	}
+
+	if cfg.TLS {
+		color.New(color.FgGreen, color.Bold).Printf("● gobaitr listening on :%d (TLS)\n", cfg.Port)
+		err := http.ListenAndServeTLS(fmt.Sprintf(":%d", cfg.Port), cfg.CertFile, cfg.KeyFile, mux)
+		if err != nil {
+			if strings.Contains(err.Error(), "address already in use") || strings.Contains(err.Error(), "Only one usage") || strings.Contains(err.Error(), "Only one usage") {
+				color.New(color.FgRed).Fprintf(os.Stderr, "Error: port %d is already in use. Use --port to specify a different port.\n", cfg.Port)
+				os.Exit(1)
+			}
+			return err
+		}
+		return nil
+	}
+
+	color.New(color.FgGreen, color.Bold).Printf("● gobaitr listening on :%d\n", cfg.Port)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), mux)
+	if err != nil {
+		if strings.Contains(err.Error(), "address already in use") || strings.Contains(err.Error(), "Only one usage") || strings.Contains(err.Error(), "Only one usage") {
+			color.New(color.FgRed).Fprintf(os.Stderr, "Error: port %d is already in use. Use --port to specify a different port.\n", cfg.Port)
+			os.Exit(1)
+		}
+		return err
+	}
+	return nil
+}
+
+func buildMux(cfg Config, db *sql.DB) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/t/", func(w http.ResponseWriter, r *http.Request) {
-
 		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/t/"), "/")
 		if len(parts) != 2 {
 			w.WriteHeader(http.StatusOK)
@@ -57,7 +88,6 @@ func Start(cfg Config, db *sql.DB) error {
 
 		remoteIP := r.RemoteAddr
 		if idx := strings.LastIndex(remoteIP, ":"); idx != -1 {
-
 			remoteIP = remoteIP[:idx]
 		}
 
@@ -97,14 +127,13 @@ func Start(cfg Config, db *sql.DB) error {
 			tokenID, now.Format(time.RFC3339), remoteIP, r.UserAgent(), string(headers))
 
 		if !cfg.Quiet {
-			red := color.New(color.FgRed, color.Bold)
-			red.Printf("\nCANARY TRIGGERED -- token %s -- %s\n\n", tokenID, remoteIP)
+			color.New(color.FgRed, color.Bold).Printf("\n🔴 TRIGGERED — token %s — %s\n\n", tokenID, remoteIP)
 		}
 
 		if cfg.Webhook != "" {
 			var tokenType, tokenNote string
 			db.QueryRow(`SELECT type, note FROM tokens WHERE id = ?`, tokenID).Scan(&tokenType, &tokenNote)
-			go DispatchWebhook(cfg.Webhook, tokenID, "", "", remoteIP, r.UserAgent(), r.Header)
+			go DispatchWebhook(cfg.Webhook, tokenID, tokenType, tokenNote, remoteIP, r.UserAgent(), r.Header)
 		}
 		w.WriteHeader(http.StatusOK)
 	})
@@ -116,15 +145,5 @@ func Start(cfg Config, db *sql.DB) error {
 		fmt.Fprintf(w, `{"status":"ok", "tokens_deployed":%d}`, count)
 	})
 
-	if !cfg.TLS {
-		fmt.Fprintf(color.Output, "\033[33mWARNING: listener running without TLS -- secrets visible on wire\033[0m\n")
-	}
-	green := color.New(color.FgGreen, color.Bold)
-	if cfg.TLS {
-		green.Printf("gobaitr listening on: %d (TLS)\n", cfg.Port)
-		return http.ListenAndServeTLS(fmt.Sprintf(":%d", cfg.Port), cfg.CertFile, cfg.KeyFile, mux)
-	}
-
-	green.Printf("gobaitr listening on :%d\n", cfg.Port)
-	return http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), mux)
+	return mux
 }

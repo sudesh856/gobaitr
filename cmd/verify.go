@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
-	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/sudesh856/gobaitr/pkg/store"
 )
@@ -41,7 +41,10 @@ func runVerify(cmd *cobra.Command, args []string) error {
 
 	token, err := s.GetByID(tokenID)
 	if err != nil {
-		return fmt.Errorf("token %s not found", &tokenID)
+		red := color.New(color.FgRed)
+		red.Fprintf(os.Stderr, "Error: token not found: %s. Run 'gobaitr list' to see all tokens.\n", tokenID)
+		os.Exit(1)
+		return nil
 	}
 
 	events, err := s.GetEvents(tokenID)
@@ -97,11 +100,11 @@ func runVerify(cmd *cobra.Command, args []string) error {
 	}
 
 	if !triggered {
-		fmt.Printf("\033[32m CLEAN — token %s has not been triggered\033[0m\n", shortID(tokenID))
+		colorSuccess.Printf("CLEAN -- token %s has not been triggered\n", shortID(tokenID))
 		os.Exit(0)
 	}
 
-	fmt.Printf("\033[31m TRIGGERED — %d event(s) recorded for token %s\033[0m\n", len(events), shortID(tokenID))
+	colorAlert.Printf("TRIGGERED -- %d event(s) recorded for token %s\n", len(events), shortID(tokenID))
 	fmt.Println()
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -134,7 +137,7 @@ func shortID(id string) string {
 	return id
 }
 
-func parseTime(s string) time.Time {
-	t, _ := time.Parse(time.RFC3339, s)
-	return t
-}
+// func parseTime(s string) time.Time {
+// 	t, _ := time.Parse(time.RFC3339, s)
+// 	return t
+// }
