@@ -2,6 +2,17 @@ This URL is embedded into your target file. When the file is accessed and the UR
 
 All data stays on your machine. Nothing is sent anywhere unless you configure a webhook.
 
+
+## Demo
+
+[Watch the full attack simulation](YOUR_LINK_HERE)
+
+Listener running, token embedded in a config file, attacker fetches the URL, alert fires, event logged.
+
+---
+
+## Why Not canarytokens.org
+
 ---
 
 ## Why Not canarytokens.org
