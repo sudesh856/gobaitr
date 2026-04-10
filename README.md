@@ -5,7 +5,7 @@ All data stays on your machine. Nothing is sent anywhere unless you configure a 
 
 ## Demo
 
-[Watch the full attack simulation](YOUR_LINK_HERE)
+<video src="https://github.com/user-attachments/assets/1af75e18-f563-441a-8b95-3bc45cf7a0df" autoplay loop muted></video>
 
 Listener running, token embedded in a config file, attacker fetches the URL, alert fires, event logged.
 
