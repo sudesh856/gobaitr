@@ -14,12 +14,12 @@ func tempDB(t *testing.T) (*Store, string, func()) {
 	}
 	dbPath := f.Name()
 	f.Close()
-	
+
 	s, err := newWithPath(dbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	return s, dbPath, func() {
 		s.Close()
 		os.Remove(dbPath)
@@ -116,5 +116,50 @@ func TestDeleteToken(t *testing.T) {
 	_, err = s.GetByID("del1")
 	if err == nil {
 		t.Error("expected error for deleted token")
+	}
+}
+
+func TestVerifyClean(t *testing.T) {
+	s, _, cleanup := tempDB(t)
+	defer cleanup()
+
+	s.Insert("clean1", "url", "sec", "http://x", "", time.Now(), nil)
+
+	row, err := s.GetByID("clean1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	triggered, _ := row["triggered"].(bool)
+	if triggered {
+		t.Error("expected token to be clean, got triggered")
+	}
+
+	events, _ := s.GetEvents("clean1")
+	if len(events) != 0 {
+		t.Errorf("expected 0 events, got %d", len(events))
+	}
+}
+
+func TestVerifyTriggered(t *testing.T) {
+	s, _, cleanup := tempDB(t)
+	defer cleanup()
+
+	s.Insert("trig1", "url", "sec", "http://x", "", time.Now(), nil)
+	s.MarkTriggered("trig1", "1.2.3.4", "curl", "{}")
+
+	row, err := s.GetByID("trig1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	triggered, _ := row["triggered"].(bool)
+	if !triggered {
+		t.Error("expected token to be triggered")
+	}
+
+	events, _ := s.GetEvents("trig1")
+	if len(events) != 1 {
+		t.Errorf("expected 1 event, got %d", len(events))
 	}
 }

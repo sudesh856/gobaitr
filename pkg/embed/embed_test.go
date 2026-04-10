@@ -1,11 +1,11 @@
-
 package embed
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
-	"encoding/json")
+)
 
 func TestEmbedEnv(t *testing.T) {
 	f, _ := os.CreateTemp("", "test-*.env")
@@ -81,5 +81,28 @@ func TestEmbedText(t *testing.T) {
 	data, _ := os.ReadFile(f.Name())
 	if !strings.Contains(string(data), "gobaitr") {
 		t.Error("missing gobaitr comment")
+	}
+}
+
+func TestEmbedJSONBackup(t *testing.T) {
+	f, _ := os.CreateTemp("", "test-backup-*.json")
+	original := `{"key": "value"}`
+	f.WriteString(original)
+	f.Close()
+	defer os.Remove(f.Name())
+	defer os.Remove(f.Name() + ".bak")
+
+	err := EmbedJSON(f.Name(), "http://localhost/t/abc/secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(f.Name() + ".gobaitr.bak"); os.IsNotExist(err) {
+		t.Error("backup file was not created before write")
+	}
+
+	bak, _ := os.ReadFile(f.Name() + ".gobaitr.bak")
+	if string(bak) != original {
+		t.Error("backup does not match original content")
 	}
 }
