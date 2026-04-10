@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/time/rate"
 	_ "modernc.org/sqlite"
 )
 
@@ -35,6 +36,9 @@ func setupTestDB(t *testing.T) *sql.DB {
 }
 
 func TestListenerHit(t *testing.T) {
+	mu.Lock()
+	ipLimiters = make(map[string]*rate.Limiter)
+	mu.Unlock()
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -63,6 +67,9 @@ func TestListenerHit(t *testing.T) {
 }
 
 func TestListenerBadSecret(t *testing.T) {
+	mu.Lock()
+	ipLimiters = make(map[string]*rate.Limiter)
+	mu.Unlock()
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -107,6 +114,9 @@ func TestListenerRateLimit(t *testing.T) {
 }
 
 func TestTokenExpiry(t *testing.T) {
+	mu.Lock()
+	ipLimiters = make(map[string]*rate.Limiter)
+	mu.Unlock()
 	db := setupTestDB(t)
 	defer db.Close()
 
