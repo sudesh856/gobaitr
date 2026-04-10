@@ -17,6 +17,15 @@ All data stays on your machine. Nothing is sent anywhere unless you configure a 
 
 ---
 
+## Requirements
+
+- Go 1.22 or later — [download](https://go.dev/dl/)
+- No CGO required
+- No external dependencies beyond Go modules
+- SQLite database is handled automatically — nothing to install
+
+Tested on Linux, macOS, and Windows.
+
 ## Token Types
 
 | Type | How It Works | Use Case |
