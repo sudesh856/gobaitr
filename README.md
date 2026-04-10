@@ -17,6 +17,17 @@ All data stays on your machine. Nothing is sent anywhere unless you configure a 
 
 ---
 
+
+## Installation
+
+```bash
+go install github.com/sudesh856/gobaitr/cmd/gobaitr@latest
+```
+
+After installing, `gobaitr` is available directly from your terminal.
+
+---
+
 ## Requirements
 
 - Go 1.22 or later — [download](https://go.dev/dl/)
